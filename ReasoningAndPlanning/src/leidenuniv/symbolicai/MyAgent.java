@@ -44,6 +44,16 @@ public class MyAgent extends Agent {
 		//Please note because f is bound and p potentially contains the variables, unifiesWith is NOT symmetrical
 		//So: unifiesWith("human(X)","human(joost)") returns X=joost, while unifiesWith("human(joost)","human(X)") returns null 
 		//If no subst is found it returns null
+		
+		// if the two predicates unify and no substitution was needed, return an empty substitution
+		if (p.toString().equals(f.toString())){
+			return new HashMap<String, String>();
+		}
+		// if a substitution occurs, return a hashmap with the variable and the term substituted
+		// predicates can only be unified if they have the same name
+		if (p.getName().equals(f.getName())) {
+		}
+		// if p cannot unify with f for any substitution, return null
 		return null;
 	}
 
@@ -52,11 +62,19 @@ public class MyAgent extends Agent {
 		// Substitutes all variable terms in predicate <old> for values in substitution <s>
 		//(only if a key is present in s matching the variable name of course)
 		//Use Term.substitute(s)
-		// Get all terms
-		Vector<Term> terms = old.getTerms();
-		// Iterate through all terms, and if possible substitute the term
-		for (Term term : terms) {
-			term.substitute(s);
+		// check if there are variables
+		if (!old.bound()) {
+			// copy old
+			String str_copy = old.toString();
+			Sentence sent_copy = new Sentence(str_copy);
+			Predicate pred_copy = new Predicate(sent_copy);
+			// try to replace all terms in the copy
+			int i = 0;
+			while(pred_copy.hasTerms()) {
+				pred_copy.getTerm(i).substitute(s);
+				i++;
+			}
+		return pred_copy;
 		}
 		return null;
 	}
