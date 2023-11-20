@@ -1,0 +1,22 @@
+#Every cycle at the sense step, the world generates percepts and returns to the agent a knowlegde base called the percept base.
+#After this, inference is done on the union of the percept rules (this file), the agent's beliefs and the percept base.
+#Every cycle your percept base changes, reflecting the current state the agent is in. 
+#If you want to remember things from previous percepts, you have to build rules to do so.
+#This is the purpose of the percept rules.
+#Such rules typically add or delete beliefs, this is done with + and - operators.
+#Add your percept rules below:
+
+
+# Store links between locations
+at(X)&passage(Y)>+link(X,Y)&+link(Y,X)
+
+# Store whether there is a key at a location
+at(X)&key(K)>+keyAt(X,K)
+
+# Store whether there is a locked door
+at(X)&locked(K)>+lockedAt(X,K)
+
+# Store the current location of the agent in the belief base //may need a different predicate name like pos(X).
+# not really sure what we will do here, why even have this in the percept base if everything about this is also handled with the actions predicate?
+# I mean at every place where you could use at you would also be able to use pos so I don't really see the benefit of this sentence yet, maybe it is just to confirm that it is added to the belief base?
+at(X)&!=(X,Y)>+pos(X)&-pos(Y)
