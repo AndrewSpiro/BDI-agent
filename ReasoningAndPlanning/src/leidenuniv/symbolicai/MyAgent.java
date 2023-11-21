@@ -101,27 +101,29 @@ public class MyAgent extends Agent {
         // If no subst is found it returns null
     }
 
-	@Override
-	public Predicate substitute(Predicate old, HashMap<String, String> s) {
-		// Substitutes all variable terms in predicate <old> for values in substitution <s>
-		//(only if a key is present in s matching the variable name of course)
-		//Use Term.substitute(s)
-		// check if there are variables
-		if (!old.bound()) {
-			// copy old
-			String str_copy = old.toString();
-			Sentence sent_copy = new Sentence(str_copy);
-			Predicate pred_copy = new Predicate(sent_copy);
-			// try to replace all terms in the copy
-			int i = 0;
-			while(pred_copy.hasTerms()) {
-				pred_copy.getTerm(i).substitute(s);
-				i++;
-			}
-		return pred_copy;
-		}
-		return null;
-	}
+    @Override
+    public Predicate substitute(Predicate old, HashMap<String, String> s) {
+        // TODO: ask if all terms need to be substituted by this method or that certain
+        // terms can be left as their variable name if they were not found as keys in
+        // the hashmap
+        // substitute all possible terms
+
+        // first we create a copy of the old predicate
+        Predicate newPredicate = new Predicate(old.toString());
+
+        // then we substitute all variables in the new predicates with key/value pairs
+        // in the hashmap
+        for (Term t : newPredicate.getTerms()) {
+            t.substitute(s);
+        }
+
+        return newPredicate;
+
+        // Substitutes all variable terms in predicate <old> for values in substitution
+        // <s>
+        // (only if a key is present in s matching the variable name of course)
+        // Use Term.substitute(s)
+    }
 
 	@Override
 	public Plan idSearch(int maxDepth, KB kb, Predicate goal) {
