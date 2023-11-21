@@ -34,6 +34,12 @@ public class MyAgent extends Agent {
 		//facts is the list of predicates you need to match against (find substitutions so that a predicate form the conditions unifies with a fact)
 		
 		//the facts hashmap is updated with the predicate.toString as the key and the predicate as the value
+		// Iterates through each condition and makes the current substitution. 
+		// If this results in a new fact, the fact is added to facts.
+		// A for-loop then looks for any substitutions that could unify the current condition with any fact.
+		// Any substitution that is made is added to the collection of all substitutions.
+		// Once the outer for-loop is completed, every condition has been checked with every fact (except for new ones).
+		// Next, the method is called again with the updated collection of substitutions and facts
 		for (Predicate p : conditions) {
 			Predicate newFact = substitute(p, substitution);
 			if (facts.containsKey(newFact.toString())) {
