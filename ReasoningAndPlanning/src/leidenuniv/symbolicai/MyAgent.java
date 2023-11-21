@@ -49,17 +49,57 @@ public class MyAgent extends Agent {
 		//So: unifiesWith("human(X)","human(joost)") returns X=joost, while unifiesWith("human(joost)","human(X)") returns null 
 		//If no subst is found it returns null
 		
-		// if the two predicates unify and no substitution was needed, return an empty substitution
-		if (p.toString().equals(f.toString())){
-			return new HashMap<String, String>();
-		}
-		// if a substitution occurs, return a hashmap with the variable and the term substituted
-		// predicates can only be unified if they have the same name
-		if (p.getName().equals(f.getName())) {
-		}
-		// if p cannot unify with f for any substitution, return null
-		return null;
-	}
+		boolean namesAreNotTheSame = f.getName()!= p.getName();
+        boolean numberOfTermsAreNotTheSame = f.getTerms().size() != p.getTerms().size();
+        boolean fIsNotBound = !f.bound();
+        if (namesAreNotTheSame || numberOfTermsAreNotTheSame || fIsNotBound) {
+        	return null;
+        }
+		
+        HashMap<String, String> result = new HashMap<String, String>();
+        
+        // test case: unifiesWith("father(X, joost)", "father(piet, joost)") -> true
+        // test case: unifiesWith("brother(X, X)", "brother(joost, piet)") -> false
+        for (int i = 0; i < p.getTerms().size(); i++) {
+            Term pTerm = p.getTerm(i);
+            Term fTerm = f.getTerm(i);
+
+            // check if pTerm is a variable or a constant, if it is a variable, try
+            // substitution, otherwise check if both constants at that position are the same
+            // in the given predicates
+            if (pTerm.var) {
+                String key = p.getTerm(i).toString();
+                String value = f.getTerm(i).toString();
+
+                // here we check if we already found a substitution for this variable earlier in
+                // the predicate,
+                // if so we check if it can be unified such that it has the same value as the
+                // first substituted instance.
+                // this is for example handy for the case:
+                // unifiesWith("brother(X, X)", "brother(joost, piet)") which would otherwise
+                // return a valid hashmap and not null.
+                if (result.containsKey(key) && result.get(key) != value) {
+                    return null;
+                }
+
+                result.putIfAbsent(key, value);
+            } else if (pTerm.toString() != fTerm.toString()) {
+                return null;
+            }
+        }
+
+        return result;
+        // Returns the valid substitution for which p predicate unifies with f
+        // You may assume that Predicate f is fully bound (i.e., it has no variables
+        // anymore)
+        // The result can be an empty substitution, if no subst is needed to unify p
+        // with f (e.g., if p an f contain the same constants or do not have any terms)
+        // Please note because f is bound and p potentially contains the variables,
+        // unifiesWith is NOT symmetrical
+        // So: unifiesWith("human(X)","human(joost)") returns X=joost, while
+        // unifiesWith("human(joost)","human(X)") returns null
+        // If no subst is found it returns null
+    }
 
 	@Override
 	public Predicate substitute(Predicate old, HashMap<String, String> s) {
