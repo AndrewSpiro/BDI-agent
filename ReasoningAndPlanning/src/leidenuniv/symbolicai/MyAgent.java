@@ -49,8 +49,61 @@ public class MyAgent extends Agent {
         // if there was one substitution found then we return true, otherewise we return
         // false
         if (conditions.size() == 0) {
-            return allSubstitutions.size() > 0;
+            // if we reach size 0 in the conditions we can return true since all conditions
+            // are correctly substituted
+            allSubstitutions.add(substitution);
+            return true;
         }
+
+        // How do we know when to quit the conditions if we need the return value of
+        // findAllSubstitutions in this method as well?
+
+        // getting the first condition and creating a new deepcopied vector with the
+        // condition removed
+        Predicate firstCondition = conditions.firstElement();
+        Vector<Predicate> newConditions = (Vector<Predicate>) conditions.clone();
+        newConditions.remove(0);
+
+        // there is a substitution already, we need to check this agains the rest of the
+        // conditions to see if the variables unify in the other predicates as well
+        // first we unify our first condition with any variables that have been found
+        // already
+        Predicate substitutedCondition = firstCondition;
+        substitutedCondition = this.substitute(firstCondition, substitution);
+
+        // if the substituted condition is bound and is not found in our facts base it
+        // means that there is no valid substitution for this condition with the given
+        // variables, thus we return false
+        if (substitutedCondition.bound()) {
+            // return false if there is no fact that unifies with this condition, go to the
+            // next condition if it does have a fact that it can unify with.
+            return facts.get(substitutedCondition.toString()) == null ? false
+                    : this.findAllSubstitions(allSubstitutions, substitution, newConditions, facts);
+        }
+
+        // if no substitution was built yet, this means we are at the top level and we
+        // need to loop through all the facts to find a substition to try out for all
+        // the other conditions
+        for (Predicate fact : facts.values()) {
+            HashMap<String, String> unifyingVars = unifiesWith(substitutedCondition, fact);
+            // the condition doesn't unify with the fact
+            if (unifyingVars == null) {
+                continue;
+            }
+
+            // we will make it so unifyingVars now contains all the right substitions that
+            // we had in substition as well if this is not empty
+            if (substitution != null) {
+                unifyingVars.putAll(substitution);
+            }
+
+            // we continue with the next condition and the newly found substituted variable
+            findAllSubstitions(allSubstitutions, unifyingVars, newConditions, facts);
+        }
+
+        // we return true if we found at least one valid substitution, otherwise we
+        // return false
+        return allSubstitutions.size() > 0;
 
         // Recursive method to find *all* valid substitutions for a vector of
         // conditions, given a set of facts
@@ -66,13 +119,11 @@ public class MyAgent extends Agent {
         // list shrinks the further you get in the recursion).
         // facts is the list of predicates you need to match against (find substitutions
         // so that a predicate form the conditions unifies with a fact)
-
-        return false;
     }
 
     @Override
     public HashMap<String, String> unifiesWith(Predicate p, Predicate f) {
-        boolean namesAreNotTheSame = f.getName() != p.getName();
+        boolean namesAreNotTheSame = !f.getName().equals(p.getName());
         boolean numberOfTermsAreNotTheSame = f.getTerms().size() != p.getTerms().size();
         boolean fIsNotBound = !f.bound();
         if (namesAreNotTheSame || numberOfTermsAreNotTheSame || fIsNotBound) {
@@ -108,7 +159,7 @@ public class MyAgent extends Agent {
                 }
 
                 result.putIfAbsent(key, value);
-            } else if (pTerm.toString() != fTerm.toString()) {
+            } else if (!pTerm.toString().equals(fTerm.toString())) {
                 return null;
             }
         }
@@ -132,6 +183,11 @@ public class MyAgent extends Agent {
         // terms can be left as their variable name if they were not found as keys in
         // the hashmap
         // substitute all possible terms
+
+        if (s == null) {
+            // don't do anything if the given hashmap is null
+            return old;
+        }
 
         // first we create a copy of the old predicate
         Predicate newPredicate = new Predicate(old.toString());
