@@ -72,7 +72,7 @@ public class MyAgent extends Agent {
 
     @Override
     public HashMap<String, String> unifiesWith(Predicate p, Predicate f) {
-        boolean namesAreNotTheSame = f.getName() != p.getName();
+        boolean namesAreNotTheSame = !f.getName().equals(p.getName());
         boolean numberOfTermsAreNotTheSame = f.getTerms().size() != p.getTerms().size();
         boolean fIsNotBound = !f.bound();
         if (namesAreNotTheSame || numberOfTermsAreNotTheSame || fIsNotBound) {
@@ -108,7 +108,7 @@ public class MyAgent extends Agent {
                 }
 
                 result.putIfAbsent(key, value);
-            } else if (pTerm.toString() != fTerm.toString()) {
+            } else if (!pTerm.toString().equals(fTerm.toString())) {
                 return null;
             }
         }
@@ -132,6 +132,11 @@ public class MyAgent extends Agent {
         // terms can be left as their variable name if they were not found as keys in
         // the hashmap
         // substitute all possible terms
+
+        if (s == null) {
+            // don't do anything if the given hashmap is null
+            return old;
+        }
 
         // first we create a copy of the old predicate
         Predicate newPredicate = new Predicate(old.toString());
