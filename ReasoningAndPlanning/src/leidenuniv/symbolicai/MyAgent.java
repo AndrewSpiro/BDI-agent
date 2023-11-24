@@ -33,16 +33,17 @@ public class MyAgent extends Agent {
 		//conditions is the list of conditions you  still need to find a subst for (this list shrinks the further you get in the recursion).
 		//facts is the list of predicates you need to match against (find substitutions so that a predicate form the conditions unifies with a fact)
 		
-		//the facts hashmap is updated with the predicate.toString as the key and the predicate as the value
 		// Iterates through each condition and makes the current substitution. 
 		// If this results in a new fact, the fact is added to facts.
 		// A for-loop then looks for any substitutions that could unify the current condition with any fact.
 		// Any substitution that is made is added to the collection of all substitutions.
 		// Once the outer for-loop is completed, every condition has been checked with every fact (except for new ones).
 		// Next, the method is called again with the updated collection of substitutions and facts
+		
+		//the facts hashmap is updated with the predicate.toString as the key and the predicate as the value
 		for (Predicate p : conditions) {
 			Predicate newFact = substitute(p, substitution);
-			if (facts.containsKey(newFact.toString())) {
+			if (facts.containsKey(newFact.toString()) || facts.equals(null)) {
 				continue;
 				//if the key already exists, don't update the facts
 			}
@@ -50,11 +51,36 @@ public class MyAgent extends Agent {
 		
 			//returns the first valid substitution for which cond unifies with a fact
 			for (HashMap.Entry<String, Predicate> fact : facts.entrySet()) {
-				substitution = unifiesWith(p, fact.getValue());
-				// add any substitution that unifies a cond with a fact to a hashmap
-				allSubstitutions.add(substitution);
+				if(fact.getValue().bound()) {
+					substitution = unifiesWith(p, fact.getValue());
+					// add any substitution that unifies a cond with a fact to a hashmap
+					if (!allSubstitutions.contains(substitution)) {
+						allSubstitutions.add(substitution);
+						}
+				}
 			}
 		}
+////////////////////////////////////////////////
+//		for (Predicate p : conditions) {
+//			//returns the first valid substitution for which cond unifies with a fact
+//			for (HashMap.Entry<String, Predicate> fact : facts.entrySet()) {
+//				if(fact.getValue().bound()) {
+//					substitution = unifiesWith(p, fact.getValue());
+//					// add any substitution that unifies a cond with a fact to a hashmap
+//					if (!allSubstitutions.contains(substitution)) {
+//						allSubstitutions.add(substitution);
+//						}
+//				}
+//			}
+//			Predicate newFact = substitute(p, substitution);
+//			if (facts.containsKey(newFact.toString())) {
+//				continue;
+//				//if the key already exists, don't update the facts
+//			}
+//			facts.put(newFact.toString(), newFact);
+//		
+//		}
+//////////////////////////////////////////////////		
 		findAllSubstitions(allSubstitutions, substitution, conditions, facts);
 		return false;
 	}
