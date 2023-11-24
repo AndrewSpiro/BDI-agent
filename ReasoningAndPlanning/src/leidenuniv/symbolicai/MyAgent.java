@@ -46,17 +46,13 @@ public class MyAgent extends Agent {
             HashMap<String, String> substitution, Vector<Predicate> conditions, HashMap<String, Predicate> facts) {
 
         // the base case is that all the conditions were processed
-        // if there was one substitution found then we return true, otherewise we return
-        // false
         if (conditions.size() == 0) {
             // if we reach size 0 in the conditions we can return true since all conditions
-            // are correctly substituted
+            // are correctly substituted, therefore we can also add our final substitution
+            // to allSubstitutions
             allSubstitutions.add(substitution);
             return true;
         }
-
-        // How do we know when to quit the conditions if we need the return value of
-        // findAllSubstitutions in this method as well?
 
         // getting the first condition and creating a new deepcopied vector with the
         // condition removed
@@ -64,8 +60,8 @@ public class MyAgent extends Agent {
         Vector<Predicate> newConditions = (Vector<Predicate>) conditions.clone();
         newConditions.remove(0);
 
-        // there is a substitution already, we need to check this agains the rest of the
-        // conditions to see if the variables unify in the other predicates as well
+        // if there is a substitution already, we need to check this agains the rest of
+        // the conditions to see if the variables unify in the other predicates as well
         // first we unify our first condition with any variables that have been found
         // already
         Predicate substitutedCondition = firstCondition;
