@@ -54,16 +54,45 @@ public class MyAgent extends Agent {
             allSubstitutions.add(substitution);
             return true;
         }
+        
+        //Dealing with reserved predicates
+        if (conditions.size()==1) {
+        	// If conditions include =(x,y)
+        	if (conditions.firstElement().eql()) {
+        		Term x = conditions.firstElement().getTerm(0);
+        		Term y = conditions.firstElement().getTerm(1);
+        		if (!substitution.get(x.toString()).equals(substitution.get(y.toString()))){
+        				// if x and y are different keys that map to different values, remove the y-value pair.
+        			substitution.remove(y.toString());
+        		}
+        	}
+        	// If conditions include !=(x,y)
+        	if (conditions.firstElement().not()) {
+        		// Requirement is that different keys map to different values
+            	Term x = conditions.firstElement().getTerm(0);
+            	Term y = conditions.firstElement().getTerm(1);
+            	if (!x.equals(y) && substitution.get(x.toString()).equals(substitution.get(y.toString()))){
+            		// if x and y are different keys that map to the same value, remove the y-value pair
+            		substitution.remove(y.toString());
+            		}
+        	}
+        }
 
         // How do we know when to quit the conditions if we need the return value of
         // findAllSubstitutions in this method as well?
 
         // getting the first condition and creating a new deepcopied vector with the
         // condition removed
+        	
+        // If the conditions is a reserved predicate, add it to the end and remove it from its current position 
+        if (conditions.firstElement().eql() || conditions.firstElement().not) {
+        	conditions.add(conditions.firstElement());
+        	conditions.remove(0);
+        }
         Predicate firstCondition = conditions.firstElement();
         Vector<Predicate> newConditions = (Vector<Predicate>) conditions.clone();
         newConditions.remove(0);
-
+ 
         // there is a substitution already, we need to check this agains the rest of the
         // conditions to see if the variables unify in the other predicates as well
         // first we unify our first condition with any variables that have been found
