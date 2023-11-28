@@ -67,14 +67,44 @@ public class MyAgent extends Agent {
         Predicate substitutedCondition = firstCondition;
         substitutedCondition = this.substitute(firstCondition, substitution);
 
-        // if the substituted condition is bound and is not found in our facts base it
-        // means that there is no valid substitution for this condition with the given
-        // variables, thus we return false
         if (substitutedCondition.bound()) {
-            // return false if there is no fact that unifies with this condition, go to the
-            // next condition if it does have a fact that it can unify with.
-            return facts.get(substitutedCondition.toString()) == null ? false
-                    : this.findAllSubstitions(allSubstitutions, substitution, newConditions, facts);
+            // either the terms are the same and its a ==(X, Y) predicate
+            boolean isValidSubstitution = substitutedCondition.eql()
+                    // or the terms are not the same and its a !=(X, Y) predicate
+                    || substitutedCondition.not()
+                    // or its not a reserved predicate but still bound and is in the facts hashmap
+                    || (facts.get(substitutedCondition.toString()) != null);
+
+            // go to the next substitution if the predicate has a valid substitution,
+            // otherwise return false ('isValidSubstitution' contains false in this case and
+            // therefore will shortcircuit this return statement)
+            return isValidSubstitution && this.findAllSubstitions(allSubstitutions, substitution, newConditions, facts);
+        }
+
+        if (substitutedCondition.not || substitutedCondition.eql) {
+            // the predicate is not bound, so this means that not all variables were found
+            // yet from the facts base.
+            // in this case we can either delegate the responsibility to deal with this
+            // predicate to a later time if there are still conditions left to check that
+            // are not eql or not predicates
+
+            // first we check if there are still predicates left that are not 'eql' or
+            // 'not' predicates
+            boolean thereAreStillNonReservedPredicatesLeft = newConditions.stream()
+                    .anyMatch(pred -> !pred.not && !pred.eql);
+
+            // if there are still non reserved predicates left then we can push our current
+            // predicate to the end of the newConditions vector and continue checking the
+            // next predicate for substitution, the return statement under here makes use of
+            // shortcircuiting to achieve this
+            if (thereAreStillNonReservedPredicatesLeft) {
+                newConditions.add(firstCondition); // push the current predicate to the end of the conditions
+                return findAllSubstitions(allSubstitutions, substitution, newConditions, facts);
+            }
+
+            // return false if there are only reserved predicates left
+            return false;
+
         }
 
         // if no substitution was built yet, this means we are at the top level and we
