@@ -59,15 +59,12 @@ public class MyAgent extends Agent {
         Predicate firstCondition = conditions.firstElement();
         Vector<Predicate> newConditions = (Vector<Predicate>) conditions.clone();
         newConditions.remove(0);
-<<<<<<< HEAD
  
         // there is a substitution already, we need to check this agains the rest of the
         // conditions to see if the variables unify in the other predicates as well
-=======
 
         // if there is a substitution already, we need to check this agains the rest of
         // the conditions to see if the variables unify in the other predicates as well
->>>>>>> e781fc7f153d590e6996d1a516d39a81319befbd
         // first we unify our first condition with any variables that have been found
         // already
         Predicate substitutedCondition = firstCondition;
