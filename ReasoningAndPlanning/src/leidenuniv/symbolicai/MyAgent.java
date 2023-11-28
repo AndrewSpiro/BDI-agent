@@ -46,68 +46,71 @@ public class MyAgent extends Agent {
             HashMap<String, String> substitution, Vector<Predicate> conditions, HashMap<String, Predicate> facts) {
 
         // the base case is that all the conditions were processed
-        // if there was one substitution found then we return true, otherewise we return
-        // false
         if (conditions.size() == 0) {
             // if we reach size 0 in the conditions we can return true since all conditions
-            // are correctly substituted
+            // are correctly substituted, therefore we can also add our final substitution
+            // to allSubstitutions
             allSubstitutions.add(substitution);
             return true;
         }
-        
-        //Dealing with reserved predicates
-        if (conditions.size()==1) {
-        	// If conditions include =(x,y)
-        	if (conditions.firstElement().eql()) {
-        		Term x = conditions.firstElement().getTerm(0);
-        		Term y = conditions.firstElement().getTerm(1);
-        		if (!substitution.get(x.toString()).equals(substitution.get(y.toString()))){
-        				// if x and y are different keys that map to different values, remove the y-value pair.
-        			substitution.remove(y.toString());
-        		}
-        	}
-        	// If conditions include !=(x,y)
-        	if (conditions.firstElement().not()) {
-        		// Requirement is that different keys map to different values
-            	Term x = conditions.firstElement().getTerm(0);
-            	Term y = conditions.firstElement().getTerm(1);
-            	if (!x.equals(y) && substitution.get(x.toString()).equals(substitution.get(y.toString()))){
-            		// if x and y are different keys that map to the same value, remove the y-value pair
-            		substitution.remove(y.toString());
-            		}
-        	}
-        }
-
-        // How do we know when to quit the conditions if we need the return value of
-        // findAllSubstitutions in this method as well?
 
         // getting the first condition and creating a new deepcopied vector with the
         // condition removed
-        	
-        // If the conditions is a reserved predicate, add it to the end and remove it from its current position 
-        if (conditions.firstElement().eql() || conditions.firstElement().not) {
-        	conditions.add(conditions.firstElement());
-        	conditions.remove(0);
-        }
         Predicate firstCondition = conditions.firstElement();
         Vector<Predicate> newConditions = (Vector<Predicate>) conditions.clone();
         newConditions.remove(0);
+<<<<<<< HEAD
  
         // there is a substitution already, we need to check this agains the rest of the
         // conditions to see if the variables unify in the other predicates as well
+=======
+
+        // if there is a substitution already, we need to check this agains the rest of
+        // the conditions to see if the variables unify in the other predicates as well
+>>>>>>> e781fc7f153d590e6996d1a516d39a81319befbd
         // first we unify our first condition with any variables that have been found
         // already
         Predicate substitutedCondition = firstCondition;
         substitutedCondition = this.substitute(firstCondition, substitution);
 
-        // if the substituted condition is bound and is not found in our facts base it
-        // means that there is no valid substitution for this condition with the given
-        // variables, thus we return false
         if (substitutedCondition.bound()) {
-            // return false if there is no fact that unifies with this condition, go to the
-            // next condition if it does have a fact that it can unify with.
-            return facts.get(substitutedCondition.toString()) == null ? false
-                    : this.findAllSubstitions(allSubstitutions, substitution, newConditions, facts);
+            // either the terms are the same and its a ==(X, Y) predicate
+            boolean isValidSubstitution = substitutedCondition.eql()
+                    // or the terms are not the same and its a !=(X, Y) predicate
+                    || substitutedCondition.not()
+                    // or its not a reserved predicate but still bound and is in the facts hashmap
+                    || (facts.get(substitutedCondition.toString()) != null);
+
+            // go to the next substitution if the predicate has a valid substitution,
+            // otherwise return false ('isValidSubstitution' contains false in this case and
+            // therefore will shortcircuit this return statement)
+            return isValidSubstitution && this.findAllSubstitions(allSubstitutions, substitution, newConditions, facts);
+        }
+
+        if (substitutedCondition.not || substitutedCondition.eql) {
+            // the predicate is not bound, so this means that not all variables were found
+            // yet from the facts base.
+            // in this case we can either delegate the responsibility to deal with this
+            // predicate to a later time if there are still conditions left to check that
+            // are not eql or not predicates
+
+            // first we check if there are still predicates left that are not 'eql' or
+            // 'not' predicates
+            boolean thereAreStillNonReservedPredicatesLeft = newConditions.stream()
+                    .anyMatch(pred -> !pred.not && !pred.eql);
+
+            // if there are still non reserved predicates left then we can push our current
+            // predicate to the end of the newConditions vector and continue checking the
+            // next predicate for substitution, the return statement under here makes use of
+            // shortcircuiting to achieve this
+            if (thereAreStillNonReservedPredicatesLeft) {
+                newConditions.add(firstCondition); // push the current predicate to the end of the conditions
+                return findAllSubstitions(allSubstitutions, substitution, newConditions, facts);
+            }
+
+            // return false if there are only reserved predicates left
+            return false;
+
         }
 
         // if no substitution was built yet, this means we are at the top level and we
