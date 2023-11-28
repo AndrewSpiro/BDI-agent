@@ -1,0 +1,5 @@
+parent(joost,leon)
+parent(joost,sacha)
+parent(peter,joost)
+female(sacha)
+male(leon)
