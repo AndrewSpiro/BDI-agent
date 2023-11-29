@@ -3,6 +3,7 @@ package leidenuniv.symbolicai;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Vector;
+import java.util.stream.Stream;
 
 import leidenuniv.symbolicai.logic.KB;
 import leidenuniv.symbolicai.logic.Predicate;
@@ -24,21 +25,48 @@ public class MyAgent extends Agent {
         // HINT: You should assume that forwardChain only allows *bound* predicates to
         // be added to the facts list for now.
 
-        // TODO: remove the if statement whenever this is finished
-        if (false) {
-            KB mergeKB = new KB();
-            boolean rulesAreBeingAdded = true;
-            while (rulesAreBeingAdded) {
-                int currentRuleCount = mergeKB.rules().size();
-                // TODO: derive any new rules from the given 'kb' parameter
-                // TODO: merge these rules to 'mergeKB'
-                int newRuleCount = mergeKB.rules().size();
-                rulesAreBeingAdded = newRuleCount > currentRuleCount;
+        KB mergeKB = new KB();
+        Vector<Sentence> nonFacts = new Vector();
+        // add all the facts to the mergeKB and get all non-facts from the kb
+        for (Sentence rule : kb.rules()) {
+            if (rule.conditions.size() == 0) {
+                mergeKB.add(rule);
+            } else {
+                nonFacts.add(rule);
             }
-            return mergeKB;
         }
 
-        return null;
+        boolean rulesAreBeingAdded = true;
+        while (rulesAreBeingAdded) {
+            int oldRuleCount = mergeKB.rules().size();
+
+            // create the facts
+            HashMap<String, Predicate> facts = new HashMap<String, Predicate>();
+            for (Sentence rule : mergeKB.rules()) {
+                facts.put(rule.toString(), new Predicate(rule));
+            }
+
+            // get all the rules that have a single conclusion and add them to the knowledge
+            // base
+            for (Sentence rule : nonFacts) {
+                Vector<HashMap<String, String>> allSubstitutions = new Vector<HashMap<String, String>>();
+                findAllSubstitions(allSubstitutions, null, rule.conditions, facts);
+
+                // now go through all the conclusions in the rule and add the substituted
+                // versions to the mergeKB
+                // versions to the mergeKB
+                for (HashMap<String, String> substitution : allSubstitutions) {
+                    Predicate conclusion = rule.conclusions.firstElement();
+                    Predicate substitutedPredicate = substitute(conclusion, substitution);
+                    mergeKB.add(new Sentence(substitutedPredicate.toString()));
+                }
+            }
+
+            int newRuleCount = mergeKB.rules().size();
+            rulesAreBeingAdded = newRuleCount > oldRuleCount;
+        }
+        return mergeKB;
+
     }
 
     @Override
