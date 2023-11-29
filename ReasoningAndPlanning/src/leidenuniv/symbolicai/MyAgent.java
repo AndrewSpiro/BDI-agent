@@ -3,6 +3,7 @@ package leidenuniv.symbolicai;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Vector;
+import java.util.stream.Stream;
 
 import leidenuniv.symbolicai.logic.KB;
 import leidenuniv.symbolicai.logic.Predicate;
@@ -24,47 +25,48 @@ public class MyAgent extends Agent {
         // HINT: You should assume that forwardChain only allows *bound* predicates to
         // be added to the facts list for now.
     	
-    	// Create an empty vector to keep track of new facts
-    	Vector<Predicate> newFacts = new Vector<Predicate>(); 
-    	
-    	// Go through each sentence in the kb
-    	for (Sentence rule : kb.rules()) {
-    		
-    		// Creating a collection to keep track of all valid substitutions for the conditions of the current sentence 
-    		Collection<HashMap<String,String>> substitutions = new Vector<HashMap<String,String>>();
-    		
-    		//Putting the current conclusions in a hashmap for compatibility with findAllSubstitions
-    		HashMap<String, Predicate> currentConclusions = new HashMap<String, Predicate>();
-    		for (Predicate conclusion : rule.conclusions) {
-    			currentConclusions.put(conclusion.toString(), conclusion);
-    		}
-    		
-    		// Getting all valid substitutions for the conditions of the current sentence
-    		this.findAllSubstitions(substitutions, new HashMap<String,String>(), rule.conditions, currentConclusions);
-    		
-    		// Goes through each possible substitution
-    		for (HashMap<String, String> substitution : substitutions) {
-    			
-    			// Makes all possible substitutions for each predicate in conclusion 
-    			for (Predicate conclusion : currentConclusions.values()) {
-	    			Predicate substitutedConclusion = substitute(conclusion, substitution);
-	    			
-	    			// If the substituted conclusion is bound and not already in kb, it is added to kb and the vector of new facts
-	    			if (!kb.contains(substitutedConclusion) && substitutedConclusion.bound()) {
-	    				newFacts.add(substitutedConclusion);
-	    				kb.add(new Sentence(substitutedConclusion.toString()));
-	    			}
-    			}
-    		}
-    	}
-
-        // If the entire kb was iterated over and no new facts were added, return the kb
-    	if (newFacts.isEmpty()) {
-        	return kb;
+        KB mergeKB = new KB();
+        Vector<Sentence> nonFacts = new Vector();
+        // add all the facts to the mergeKB and get all non-facts from the kb
+        for (Sentence rule : kb.rules()) {
+            if (rule.conditions.size() == 0) {
+                mergeKB.add(rule);
+            } else {
+                nonFacts.add(rule);
+            }
         }
-    	
-    	// If new facts are still being added, go through the whole kb again to try to add more
-    	return forwardChain(kb);
+
+        boolean rulesAreBeingAdded = true;
+        while (rulesAreBeingAdded) {
+            int oldRuleCount = mergeKB.rules().size();
+
+            // create the facts
+            HashMap<String, Predicate> facts = new HashMap<String, Predicate>();
+            for (Sentence rule : mergeKB.rules()) {
+                facts.put(rule.toString(), new Predicate(rule));
+            }
+
+            // get all the rules that have a single conclusion and add them to the knowledge
+            // base
+            for (Sentence rule : nonFacts) {
+                Vector<HashMap<String, String>> allSubstitutions = new Vector<HashMap<String, String>>();
+                findAllSubstitions(allSubstitutions, null, rule.conditions, facts);
+
+                // now go through all the conclusions in the rule and add the substituted
+                // versions to the mergeKB
+                // versions to the mergeKB
+                for (HashMap<String, String> substitution : allSubstitutions) {
+                    Predicate conclusion = rule.conclusions.firstElement();
+                    Predicate substitutedPredicate = substitute(conclusion, substitution);
+                    mergeKB.add(new Sentence(substitutedPredicate.toString()));
+                }
+            }
+
+            int newRuleCount = mergeKB.rules().size();
+            rulesAreBeingAdded = newRuleCount > oldRuleCount;
+        }
+        return mergeKB;
+
     }
 
     @Override
@@ -86,38 +88,31 @@ public class MyAgent extends Agent {
         Vector<Predicate> newConditions = (Vector<Predicate>) conditions.clone();
         newConditions.remove(0);
 
-        // if there is a substitution already, we need to check this agains the rest of
-        // the conditions to see if the variables unify in the other predicates as well
         // first we unify our first condition with any variables that have been found
         // already
         Predicate substitutedCondition = firstCondition;
         substitutedCondition = this.substitute(firstCondition, substitution);
 
-        if (substitutedCondition.bound()) {
-            // either the terms are the same and its a ==(X, Y) predicate
-            boolean isValidSubstitution = substitutedCondition.eql()
-                    // or the terms are not the same and its a !=(X, Y) predicate
-                    || substitutedCondition.not()
-                    // or its not a reserved predicate but still bound and is in the facts hashmap
-                    || (facts.get(substitutedCondition.toString()) != null);
-
-            // go to the next substitution if the predicate has a valid substitution,
-            // otherwise return false ('isValidSubstitution' contains false in this case and
-            // therefore will shortcircuit this return statement)
-            return isValidSubstitution && this.findAllSubstitions(allSubstitutions, substitution, newConditions, facts);
+        // if the condition is bound and a '==' or '!=' operator and the arguments
+        // within the condition hold to these operators we can continue to the next
+        // condition (all of this is checked within the eql() and not() methods of the
+        // Predicate)
+        if (substitutedCondition.eql() || substitutedCondition.not()) {
+            return this.findAllSubstitions(allSubstitutions, substitution, newConditions, facts);
         }
 
-        if (substitutedCondition.not || substitutedCondition.eql) {
-            // the predicate is not bound, so this means that not all variables were found
-            // yet from the facts base.
-            // in this case we can either delegate the responsibility to deal with this
-            // predicate to a later time if there are still conditions left to check that
-            // are not eql or not predicates
+        // if the condition is a not or an eql operator or a negation and not bound, it
+        // means that the condition is not bound at this point and for these special
+        // Predicates its best to delegat them to a later time when maybe all the
+        // variables were found for the condition.
+        if (substitutedCondition.not || substitutedCondition.eql
+                || (!substitutedCondition.bound() && substitutedCondition.neg)) {
 
             // first we check if there are still predicates left that are not 'eql' or
-            // 'not' predicates
+            // 'not' or 'neg' predicates (because we can still find variable substitutions
+            // in all other conditions that are non reserved)
             boolean thereAreStillNonReservedPredicatesLeft = newConditions.stream()
-                    .anyMatch(pred -> !pred.not && !pred.eql);
+                    .anyMatch(pred -> !pred.not && !pred.eql && !pred.neg);
 
             // if there are still non reserved predicates left then we can push our current
             // predicate to the end of the newConditions vector and continue checking the
@@ -130,7 +125,6 @@ public class MyAgent extends Agent {
 
             // return false if there are only reserved predicates left
             return false;
-
         }
 
         // if no substitution was built yet, this means we are at the top level and we
@@ -138,9 +132,17 @@ public class MyAgent extends Agent {
         // the other conditions
         for (Predicate fact : facts.values()) {
             HashMap<String, String> unifyingVars = unifiesWith(substitutedCondition, fact);
+
             // the condition doesn't unify with the fact
             if (unifyingVars == null) {
                 continue;
+            }
+
+            // at this point any substitutedCondition is bound and if a unification is found
+            // for the condition this automatically means the condition doesn't hold true
+            // and therefore we return false.
+            if (substitutedCondition.neg) {
+                return false;
             }
 
             // we will make it so unifyingVars now contains all the right substitions that
@@ -151,6 +153,14 @@ public class MyAgent extends Agent {
 
             // we continue with the next condition and the newly found substituted variable
             findAllSubstitions(allSubstitutions, unifyingVars, newConditions, facts);
+        }
+
+        // if the condition is a negation and we made it to this point in the function
+        // it means that the condition is bound and it didn't find any unifications for
+        // it. this means that the negation holds and we can continue to the next
+        // condition.
+        if (substitutedCondition.neg) {
+            return findAllSubstitions(allSubstitutions, substitution, newConditions, facts);
         }
 
         // we return true if we found at least one valid substitution, otherwise we
