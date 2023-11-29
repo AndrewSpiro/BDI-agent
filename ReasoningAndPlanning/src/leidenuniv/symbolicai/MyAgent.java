@@ -25,46 +25,52 @@ public class MyAgent extends Agent {
         // be added to the facts list for now.
     	
     	// Create an empty vector to keep track of new facts
-    	Vector<Predicate> newFacts = new Vector<Predicate>(); 
+    	System.out.println("kb: ");
+    	System.out.println(kb);
+    	KB newFacts = new KB(); 
     	
     	// Go through each sentence in the kb
     	for (Sentence rule : kb.rules()) {
+    		if (rule.conditions.size()==0) {
+    			continue;
+    		}
     		
     		// Creating a collection to keep track of all valid substitutions for the conditions of the current sentence 
     		Collection<HashMap<String,String>> substitutions = new Vector<HashMap<String,String>>();
+			HashMap<String, Predicate> predicate = new HashMap<String, Predicate>();
+
+    		for (Sentence fact: kb.rules()) {
+    			if (fact.conditions.size() == 0 && fact.conclusions.size() == 1) {
+    				Predicate newFact = new Predicate(fact);
+    				predicate.put(newFact.toString(), newFact);	
+    			}
     		
-    		//Putting the current conclusions in a hashmap for compatibility with findAllSubstitions
-    		HashMap<String, Predicate> currentConclusions = new HashMap<String, Predicate>();
-    		for (Predicate conclusion : rule.conclusions) {
-    			currentConclusions.put(conclusion.toString(), conclusion);
+	    		// Getting all valid substitutions for the conditions of the current sentence
+    			if (fact.conditions.size() > 0) {
+    	    		this.findAllSubstitions(substitutions, new HashMap<String,String>(), rule.conditions, predicate);
+    	    		System.out.println();
+    			}
+    		
     		}
-    		
-    		// Getting all valid substitutions for the conditions of the current sentence
-    		this.findAllSubstitions(substitutions, new HashMap<String,String>(), rule.conditions, currentConclusions);
-    		
     		// Goes through each possible substitution
     		for (HashMap<String, String> substitution : substitutions) {
     			
     			// Makes all possible substitutions for each predicate in conclusion 
-    			for (Predicate conclusion : currentConclusions.values()) {
+    			for (Predicate conclusion : rule.conclusions) {
 	    			Predicate substitutedConclusion = substitute(conclusion, substitution);
-	    			
 	    			// If the substituted conclusion is bound and not already in kb, it is added to kb and the vector of new facts
 	    			if (!kb.contains(substitutedConclusion) && substitutedConclusion.bound()) {
-	    				newFacts.add(substitutedConclusion);
-	    				kb.add(new Sentence(substitutedConclusion.toString()));
+	    				newFacts.add(new Sentence(substitutedConclusion.toString()));
 	    			}
     			}
     		}
     	}
-
-        // If the entire kb was iterated over and no new facts were added, return the kb
-    	if (newFacts.isEmpty()) {
-        	return kb;
-        }
+    	if (newFacts.rules().size()==0) {
+    		return kb;
+    	}
     	
-    	// If new facts are still being added, go through the whole kb again to try to add more
-    	return forwardChain(kb);
+    	KB kb2 = kb.union(newFacts);
+    	return forwardChain(kb2);
     }
 
     @Override
