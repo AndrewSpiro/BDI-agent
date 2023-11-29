@@ -43,6 +43,12 @@ public class MyAgent extends Agent {
             // create the facts
             HashMap<String, Predicate> facts = new HashMap<String, Predicate>();
             for (Sentence rule : mergeKB.rules()) {
+            	// TODO: check for operators because they can't be used as facts
+            	Predicate fact = new Predicate(rule);
+            	if (fact.del || fact.adopt || fact.act || fact.drop) {
+            		// don't add bound operators to the fact space, only if they are added to the belief space as well since we assume these are new rules anyway
+            		continue;
+            	}
                 facts.put(rule.toString(), new Predicate(rule));
             }
 
@@ -54,11 +60,13 @@ public class MyAgent extends Agent {
 
                 // now go through all the conclusions in the rule and add the substituted
                 // versions to the mergeKB
-                // versions to the mergeKB
                 for (HashMap<String, String> substitution : allSubstitutions) {
-                    Predicate conclusion = rule.conclusions.firstElement();
-                    Predicate substitutedPredicate = substitute(conclusion, substitution);
-                    mergeKB.add(new Sentence(substitutedPredicate.toString()));
+                    for (Predicate conclusion : rule.conclusions) {
+	                    Predicate substitutedPredicate = substitute(conclusion, substitution);
+	                    if (substitutedPredicate.bound()) {
+	                    	mergeKB.add(new Sentence(substitutedPredicate.toString()));
+	                    }
+                    }
                 }
             }
 
