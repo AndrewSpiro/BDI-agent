@@ -23,22 +23,48 @@ public class MyAgent extends Agent {
         // you)
         // HINT: You should assume that forwardChain only allows *bound* predicates to
         // be added to the facts list for now.
+    	
+    	// Create an empty vector to keep track of new facts
+    	Vector<Predicate> newFacts = new Vector<Predicate>(); 
+    	
+    	// Go through each sentence in the kb
+    	for (Sentence rule : kb.rules()) {
+    		
+    		// Creating a collection to keep track of all valid substitutions for the conditions of the current sentence 
+    		Collection<HashMap<String,String>> substitutions = new Vector<HashMap<String,String>>();
+    		
+    		//Putting the current conclusions in a hashmap for compatibility with findAllSubstitions
+    		HashMap<String, Predicate> currentConclusions = new HashMap<String, Predicate>();
+    		for (Predicate conclusion : rule.conclusions) {
+    			currentConclusions.put(conclusion.toString(), conclusion);
+    		}
+    		
+    		// Getting all valid substitutions for the conditions of the current sentence
+    		this.findAllSubstitions(substitutions, new HashMap<String,String>(), rule.conditions, currentConclusions);
+    		
+    		// Goes through each possible substitution
+    		for (HashMap<String, String> substitution : substitutions) {
+    			
+    			// Makes all possible substitutions for each predicate in conclusion 
+    			for (Predicate conclusion : currentConclusions.values()) {
+	    			Predicate substitutedConclusion = substitute(conclusion, substitution);
+	    			
+	    			// If the substituted conclusion is bound and not already in kb, it is added to kb and the vector of new facts
+	    			if (!kb.contains(substitutedConclusion) && substitutedConclusion.bound()) {
+	    				newFacts.add(substitutedConclusion);
+	    				kb.add(new Sentence(substitutedConclusion.toString()));
+	    			}
+    			}
+    		}
+    	}
 
-        // TODO: remove the if statement whenever this is finished
-        if (false) {
-            KB mergeKB = new KB();
-            boolean rulesAreBeingAdded = true;
-            while (rulesAreBeingAdded) {
-                int currentRuleCount = mergeKB.rules().size();
-                // TODO: derive any new rules from the given 'kb' parameter
-                // TODO: merge these rules to 'mergeKB'
-                int newRuleCount = mergeKB.rules().size();
-                rulesAreBeingAdded = newRuleCount > currentRuleCount;
-            }
-            return mergeKB;
+        // If the entire kb was iterated over and no new facts were added, return the kb
+    	if (newFacts.isEmpty()) {
+        	return kb;
         }
-
-        return null;
+    	
+    	// If new facts are still being added, go through the whole kb again to try to add more
+    	return forwardChain(kb);
     }
 
     @Override
