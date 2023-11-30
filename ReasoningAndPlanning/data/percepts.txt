@@ -16,7 +16,5 @@ at(X)&key(K)>+keyAt(X,K)
 #Store whether there is a locked door
 at(X)&locked(K)>+lockedAt(X,K)
 
-#Store the current location of the agent in the belief base //may need a different predicate name like pos(X).
-#not really sure what we will do here, why even have this in the percept base if everything about this is also handled with the actions predicate?
-#I mean at every place where you could use at you would also be able to use pos so I don't really see the benefit of this sentence yet, maybe it is just to confirm that it is added to the belief base?
+#Store the current location of the agent in the belief base
 at(X)>+pos(X)&+explored(X)
