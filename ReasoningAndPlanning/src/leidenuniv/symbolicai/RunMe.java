@@ -14,10 +14,6 @@ public class RunMe {
     // It loads a world, makes an agent and then keeps the agent alive by allowing
     // it to complete it's sense think act cycle
     public static void main(String[] args) {
-        // testSubstitute();
-        // testUnifiesWith();
-        // testFindAllSubstitutions();
-        // return;
         // Load a world
 
         Maze w = new Maze(new File("data/prison.txt"));
@@ -41,11 +37,9 @@ public class RunMe {
         while (true) {
             // have the agent run the sense-think-act loop.
             a.cycle(w);
-
             // wait for an enter
-            // System.out.println("Press <enter> in the java console to continue next
-            // cycle");
-            // String input = io.nextLine();
+            System.out.println("Press <enter> in the java console to continue next cycle");
+            String input = io.nextLine();
 
         }
     }
