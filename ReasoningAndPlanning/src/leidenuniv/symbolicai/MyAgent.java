@@ -43,12 +43,13 @@ public class MyAgent extends Agent {
             // create the facts
             HashMap<String, Predicate> facts = new HashMap<String, Predicate>();
             for (Sentence rule : mergeKB.rules()) {
-            	// TODO: check for operators because they can't be used as facts
-            	Predicate fact = new Predicate(rule);
-            	if (fact.del || fact.adopt || fact.act || fact.drop) {
-            		// don't add bound operators to the fact space, only if they are added to the belief space as well since we assume these are new rules anyway
-            		continue;
-            	}
+                // TODO: check for operators because they can't be used as facts
+                Predicate fact = new Predicate(rule);
+                if (fact.del || fact.adopt || fact.act || fact.drop) {
+                    // don't add bound operators to the fact space, only if they are added to the
+                    // belief space as well since we assume these are new rules anyway
+                    continue;
+                }
                 facts.put(rule.toString(), new Predicate(rule));
             }
 
@@ -62,10 +63,10 @@ public class MyAgent extends Agent {
                 // versions to the mergeKB
                 for (HashMap<String, String> substitution : allSubstitutions) {
                     for (Predicate conclusion : rule.conclusions) {
-	                    Predicate substitutedPredicate = substitute(conclusion, substitution);
-	                    if (substitutedPredicate.bound()) {
-	                    	mergeKB.add(new Sentence(substitutedPredicate.toString()));
-	                    }
+                        Predicate substitutedPredicate = substitute(conclusion, substitution);
+                        if (substitutedPredicate.bound()) {
+                            mergeKB.add(new Sentence(substitutedPredicate.toString()));
+                        }
                     }
                 }
             }
@@ -249,9 +250,6 @@ public class MyAgent extends Agent {
 
     @Override
     public Predicate substitute(Predicate old, HashMap<String, String> s) {
-        // TODO: ask if all terms need to be substituted by this method or that certain
-        // terms can be left as their variable name if they were not found as keys in
-        // the hashmap
         // substitute all possible terms
 
         if (s == null) {
@@ -278,16 +276,65 @@ public class MyAgent extends Agent {
 
     @Override
     public Plan idSearch(int maxDepth, KB kb, Predicate goal) {
+        for (int i = 0; i < maxDepth; i++) {
+            KB newState = new KB();
+            Plan plan = depthFirst(i, 0, newState.union(kb), goal, new Plan());
+            if (plan != null) {
+                return plan;
+            }
+        }
+        return null;
         // The main iterative deepening loop
         // Returns a plan, when the depthFirst call returns a plan for depth d.
         // Ends at maxDepth
         // Predicate goal is the goal predicate to find a plan for.
         // Return null if no plan is found.
-        return null;
     }
 
     @Override
     public Plan depthFirst(int maxDepth, int depth, KB state, Predicate goal, Plan partialPlan) {
+        // TODO: we need to loop over the branches in this case and explore each branch
+        // to the end
+        // TODO: for each node in the branch we will check which action we can undertake
+        // by thinking about it and acting afterwards within that node
+
+        // our base case, returns null when maxDepth is reached
+        if (depth == maxDepth) {
+            return null;
+        }
+
+        KB actions = new KB();
+
+        Vector<Predicate> desireVector = new Vector();
+        desireVector.add(goal);
+        KB desires = new KB(desireVector);
+        // will think about what actions to undertake based on the current desire (goal)
+        // and puts the actions in the actions KB
+        think(state, new KB(), actions);
+
+        // try out all the actions in this node
+        for (Sentence action : actions.rules()) {
+            KB newState = new KB().union(state);
+            KB copiedDesires = new KB().union(desires);
+            Plan newPartialPlan = new Plan(partialPlan);
+
+            act(null, new Predicate(action), newState, copiedDesires);
+            // add the action to our plan
+            newPartialPlan.add(action);
+            // this means that the goal was taken out of the desires
+            // which means that the goal was reached and removed from our desires
+            if (!copiedDesires.contains(goal)) {
+                return newPartialPlan;
+            }
+
+            // if the goal was not reached yet we call the next depthFirst call
+            Plan returnedPlan = depthFirst(maxDepth, depth + 1, newState, goal, newPartialPlan);
+            if (returnedPlan != null) {
+                return returnedPlan;
+            }
+        }
+
+        return null;
         // Performs a depthFirst search for a plan to get to Predicate goal
         // Is a recursive function, with each call a deeper action in the plan, building
         // up the partialPlan
@@ -298,6 +345,5 @@ public class MyAgent extends Agent {
         // node (state)
         // HINT: make use of think() and act() using the local state for the node in the
         // search you are in.
-        return null;
     }
 }
