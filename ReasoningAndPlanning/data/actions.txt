@@ -3,10 +3,9 @@
 #If the action succeeds, the action rules (this file) are evaluated using inference on the union of the action rules, the beliefs and the desires.
 #This is how possible postconditions are triggered. Note that you cannot form new intentions in this phase, so, world actions cannot be postconditions of actions!!!
 #Add your action postcondition rules below:
-# TODO: check how this works exactly and see if the naming matters here
 
-grab(X,K)>-keyAt(X,K)&+hasKey(K)
+grab(X,K)>-keyAt(X,K)&+hasKey(K)&~haveKey(K)
 
-open(X,K)>-lockedAt(X,K)&-locked(K)
+open(X,K)>-lockedAt(X,K)&-locked(K)&~openDoor(X,K)
 
-goto(X,Y)>-pos(X)&+pos(Y)
+goto(X,Y)>-pos(X)&+pos(Y)&~explore(Y)
