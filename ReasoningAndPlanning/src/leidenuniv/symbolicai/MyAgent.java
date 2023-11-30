@@ -24,7 +24,7 @@ public class MyAgent extends Agent {
         // you)
         // HINT: You should assume that forwardChain only allows *bound* predicates to
         // be added to the facts list for now.
-
+    	
         KB mergeKB = new KB();
         Vector<Sentence> nonFacts = new Vector();
         // add all the facts to the mergeKB and get all non-facts from the kb

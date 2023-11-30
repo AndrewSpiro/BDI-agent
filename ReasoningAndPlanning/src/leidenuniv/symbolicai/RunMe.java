@@ -7,6 +7,7 @@ import java.util.Vector;
 
 import leidenuniv.symbolicai.environment.Maze;
 import leidenuniv.symbolicai.logic.Predicate;
+import leidenuniv.symbolicai.logic.Sentence;
 
 public class RunMe {
     // This is our main program class
@@ -18,6 +19,7 @@ public class RunMe {
         // testFindAllSubstitutions();
         // return;
         // Load a world
+
         Maze w = new Maze(new File("data/prison.txt"));
         // Create an agent
         Agent a = new MyAgent();
@@ -41,8 +43,9 @@ public class RunMe {
             a.cycle(w);
 
             // wait for an enter
-//            System.out.println("Press <enter> in the java console to continue next cycle");
-//            String input = io.nextLine();
+            // System.out.println("Press <enter> in the java console to continue next
+            // cycle");
+            // String input = io.nextLine();
 
         }
     }
